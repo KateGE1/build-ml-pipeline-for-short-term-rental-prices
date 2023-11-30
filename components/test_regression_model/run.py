@@ -9,7 +9,6 @@ import mlflow
 import pandas as pd
 from sklearn.metrics import mean_absolute_error
 
-from wandb_utils.log_artifact import log_artifact
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
@@ -49,7 +48,30 @@ def go(args):
     run.summary['r2'] = r_squared
     run.summary['mae'] = mae
 
+def log_artifact(artifact_name, artifact_type, artifact_description, filename, wandb_run):
+    """
+    Log the provided filename as an artifact in W&B, and add the artifact path to the MLFlow run
+    so it can be retrieved by subsequent steps in a pipeline
 
+    :param artifact_name: name for the artifact
+    :param artifact_type: type for the artifact (just a string like "raw_data", "clean_data" and so on)
+    :param artifact_description: a brief description of the artifact
+    :param filename: local filename for the artifact
+    :param wandb_run: current Weights & Biases run
+    :return: None
+    """
+    # Log to W&B
+    artifact = wandb.Artifact(
+        artifact_name,
+        type=artifact_type,
+        description=artifact_description,
+    )
+    artifact.add_file(filename)
+    wandb_run.log_artifact(artifact)
+    # We need to call this .wait() method before we can use the
+    # version below. This will wait until the artifact is loaded into W&B and a
+    # version is assigned
+    artifact.wait()
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Test the provided model against the test dataset")
